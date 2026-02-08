@@ -1,29 +1,136 @@
-### IntelliJ IDEA ###
+# ===========================
+# Java
+# ===========================
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# ===========================
+# Maven
+# ===========================
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# ===========================
+# Gradle (if used)
+# ===========================
+.gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ===========================
+# Spring Boot
+# ===========================
+*.log
+logs/
+spring-boot-starter*.jar
+
+# ===========================
+# Application Properties (Sensitive)
+# ===========================
+application-local.yml
+application-local.properties
+application-prod.yml
+application-prod.properties
+*.env
+.env
+.env.local
+.env.*.local
+
+# ===========================
+# IntelliJ IDEA
+# ===========================
+.idea/
+*.iml
+*.ipr
+*.iws
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
-### Eclipse ###
+# ===========================
+# Eclipse
+# ===========================
 .apt_generated
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
 bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
-### NetBeans ###
+# ===========================
+# NetBeans
+# ===========================
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 
-### VS Code ###
+# ===========================
+# VS Code
+# ===========================
 .vscode/
 
-### Mac OS ###
+# ===========================
+# OS Generated Files
+# ===========================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ===========================
+# Logs and Databases
+# ===========================
+*.log
+*.sql
+*.sqlite
+*.db
+
+# ===========================
+# Package Files
+# ===========================
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# ===========================
+# Test Output
+# ===========================
+/test-output/
+/surefire-reports/
+/failsafe-reports/
+
+# ===========================
+# Miscellaneous
+# ===========================
+*.swp
+*.swo
+*~
+.cache/
+tmp/
+temp/
