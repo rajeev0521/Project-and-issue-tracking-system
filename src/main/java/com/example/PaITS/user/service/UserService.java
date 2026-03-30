@@ -1,24 +1,30 @@
 package com.example.PaITS.user.service;
 
-import com.example.PaITS.user.dto.CreateUserRequest;
-import com.example.PaITS.user.dto.LoginRequest;
-import com.example.PaITS.user.dto.UpdateUserRequest;
-import com.example.PaITS.user.dto.UserResponse;
+import com.example.PaITS.user.dto.*;
 import com.example.PaITS.user.entity.Role;
 import com.example.PaITS.user.entity.User;
 import com.example.PaITS.user.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
+
+import org.springframework.security.core.context.SecurityContextHolder;
+
+
 
 @Service
 
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
 
@@ -32,36 +38,29 @@ public class UserService {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setFullName(request.getFullName());
-        user.setPasswordHash(request.getPassword());
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.MEMBER);
         user.setActive(true);
+
 
         User saved = userRepository.save(user);
 
         return mapToResponse(saved);
     }
 
-    public String login(LoginRequest request) {
 
-        User user = userRepository.findByEmail(request.getEmail())
+    public UserResponse updateCurrentUser( UpdateUserRequest request) {
+
+
+
+        String currentEmail = getCurrentUserEmail();
+        User user = userRepository.findByEmail(currentEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!user.getPasswordHash().equals(request.getPassword())) {
-            throw new RuntimeException("Invalid password");
+        // 🔐 SECURITY CHECK
+        if (!user.getEmail().equals(currentEmail)) {
+            throw new RuntimeException("You can only update your own account");
         }
-
-        if (!user.isActive()) {
-            throw new RuntimeException("Account is inactive");
-        }
-
-        return "Login successful";
-    }
-
-    public UserResponse updateUser(UUID id, UpdateUserRequest request) {
-
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
         if (request.getFullName() != null)
             user.setFullName(request.getFullName());
 
@@ -69,7 +68,7 @@ public class UserService {
             user.setUsername(request.getUsername());
 
         if (request.getPassword() != null)
-            user.setPasswordHash(request.getPassword());
+            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
         if (request.getAvatarUrl() != null)
             user.setAvatarUrl(request.getAvatarUrl());
@@ -86,12 +85,19 @@ public class UserService {
         return mapToResponse(user);
     }
 
-    public void deactivateUser(UUID id) {
 
-        User user = userRepository.findById(id)
+
+    public void deactivateCurrentUser() {
+
+        String currentEmail = getCurrentUserEmail();
+        User user = userRepository.findByEmail(currentEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+
+        // 3. Deactivate account
         user.setActive(false);
+
+        // 4. Save changes
         userRepository.save(user);
     }
 
@@ -107,4 +113,65 @@ public class UserService {
         );
     }
 
+    private String getCurrentUserEmail() {
+        return SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName(); // we stored email in JWT
+    }
+    public UserResponse getByEmail(String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return mapToResponse(user);
+    }
+
+
+    public UserResponse getCurrentUser() {
+
+        String currentEmail = getCurrentUserEmail();
+
+        User user = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return mapToResponse(user);
+    }
+
+    public PublicUserResponse getPublicUserById(UUID id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return new PublicUserResponse(
+                user.getUsername(),
+                user.getEmail(),
+                user.isActive()
+        );
+    }
+
+    public List<UserResponse> getAllUsers() {
+
+        return userRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    public void deleteUserById(UUID id) {
+
+        String currentEmail = getCurrentUserEmail();
+
+        User currentUser = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new RuntimeException("Current user not found"));
+
+        User targetUser = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (currentUser.getId().equals(targetUser.getId())) {
+            throw new RuntimeException("Admin cannot delete himself");
+        }
+
+        targetUser.setActive(false);
+        userRepository.save(targetUser);
+    }
 }

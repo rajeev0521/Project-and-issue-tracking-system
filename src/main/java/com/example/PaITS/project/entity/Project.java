@@ -1,4 +1,4 @@
-package com.example.PaITS.user.entity;
+package com.example.PaITS.project.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -9,32 +9,32 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-
-@Entity
-@Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "users")
-
-public class User {
+@Getter
+@Setter
+@Table(name = "projects")
+class Project {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    private String username;
+    @Column(nullable = false, unique = true, length = 10)
+    private String projectKey;
 
-    @Column(unique = true, nullable = false)
-    private String email;
+    @Column(nullable = false, length = 100)
+    private String name;
 
-    public String passwordHash;
-    public String fullName;
+    private String description;
 
     @Column(nullable = false)
-    private String role = Role.MEMBER;     // ADMIN, MEMBER
+    private UUID createdBy;
 
-    public boolean isActive;
-    public String avatarUrl;
+    private boolean isActive = true;
+
+    private int issueSequence = 0;
+
+    private UUID workflowId;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -48,9 +48,5 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 
-    @PreUpdate
-    public void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
-}
 
+}
