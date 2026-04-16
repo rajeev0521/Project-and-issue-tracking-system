@@ -134,3 +134,5 @@ desktop.ini
 .cache/
 tmp/
 temp/
+*.py
+*.pyc

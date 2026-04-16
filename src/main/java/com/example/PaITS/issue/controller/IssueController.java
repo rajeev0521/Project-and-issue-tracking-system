@@ -3,9 +3,11 @@ package com.example.PaITS.issue.controller;
 import com.example.PaITS.issue.dto.IssueRequestDTO;
 import com.example.PaITS.issue.dto.IssueResponseDTO;
 import com.example.PaITS.issue.dto.IssueStatusUpdateDTO;
+import com.example.PaITS.issue.entity.IssueStatus;
 import com.example.PaITS.issue.service.IssueService;
 import com.example.PaITS.user.entity.User;
 import com.example.PaITS.user.repository.UserRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +39,17 @@ public class IssueController {
     }
 
     @GetMapping
-    public ResponseEntity<List<IssueResponseDTO>> getIssuesByProject(@PathVariable UUID projectId) {
+    public ResponseEntity<List<IssueResponseDTO>> getIssuesByProject(
+            @PathVariable UUID projectId,
+            @RequestParam(required = false) IssueStatus status,
+            @RequestParam(required = false) UUID assigneeId) {
+        
+        if (status != null) {
+            return ResponseEntity.ok(issueService.getIssuesByProjectAndStatus(projectId, status));
+        } else if (assigneeId != null) {
+            return ResponseEntity.ok(issueService.getIssuesByProjectAndAssignee(projectId, assigneeId));
+        }
+        
         return ResponseEntity.ok(issueService.getIssuesByProject(projectId));
     }
 
@@ -63,7 +75,7 @@ public class IssueController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<IssueResponseDTO> updateStatus(
             @PathVariable UUID id,
-            @RequestBody IssueStatusUpdateDTO statusUpdate) {
+            @Valid @RequestBody IssueStatusUpdateDTO statusUpdate) {
         return ResponseEntity.ok(issueService.updateStatus(id, statusUpdate));
     }
 

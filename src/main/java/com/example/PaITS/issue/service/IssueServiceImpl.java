@@ -5,11 +5,13 @@ import com.example.PaITS.issue.dto.IssueResponseDTO;
 import com.example.PaITS.issue.dto.IssueStatusUpdateDTO;
 import com.example.PaITS.issue.entity.Issue;
 import com.example.PaITS.issue.entity.IssueStatus;
+import com.example.PaITS.common.exception.ResourceNotFoundException;
 import com.example.PaITS.issue.repository.IssueRepository;
 import com.example.PaITS.project.entity.Project;
 import com.example.PaITS.project.repository.ProjectRepository;
 import com.example.PaITS.user.entity.User;
 import com.example.PaITS.user.repository.UserRepository;
+import com.example.PaITS.workflow.WorkflowEngine;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,20 +27,21 @@ public class IssueServiceImpl implements IssueService {
     private final IssueRepository issueRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final WorkflowEngine workflowEngine;
 
     @Override
     @Transactional
     public IssueResponseDTO createIssue(UUID projectId, UUID reporterId, IssueRequestDTO request) {
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
 
         User reporter = userRepository.findById(reporterId)
-                .orElseThrow(() -> new RuntimeException("Reporter not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", reporterId));
 
         User assignee = null;
         if (request.getAssigneeId() != null) {
             assignee = userRepository.findById(request.getAssigneeId())
-                    .orElseThrow(() -> new RuntimeException("Assignee not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.getAssigneeId()));
         }
 
         // Increment sequence and generate key
@@ -71,9 +74,23 @@ public class IssueServiceImpl implements IssueService {
     }
 
     @Override
+    public List<IssueResponseDTO> getIssuesByProjectAndStatus(UUID projectId, IssueStatus status) {
+        return issueRepository.findByProjectIdAndStatus(projectId, status).stream()
+                .map(this::mapToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<IssueResponseDTO> getIssuesByProjectAndAssignee(UUID projectId, UUID assigneeId) {
+        return issueRepository.findByProjectIdAndAssigneeId(projectId, assigneeId).stream()
+                .map(this::mapToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public IssueResponseDTO getIssueById(UUID id) {
         Issue issue = issueRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue", "id", id));
         return mapToResponseDTO(issue);
     }
 
@@ -81,7 +98,7 @@ public class IssueServiceImpl implements IssueService {
     @Transactional
     public IssueResponseDTO updateIssue(UUID id, IssueRequestDTO request) {
         Issue issue = issueRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue", "id", id));
 
         issue.setTitle(request.getTitle());
         issue.setDescription(request.getDescription());
@@ -90,7 +107,7 @@ public class IssueServiceImpl implements IssueService {
 
         if (request.getAssigneeId() != null) {
             User assignee = userRepository.findById(request.getAssigneeId())
-                    .orElseThrow(() -> new RuntimeException("Assignee not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.getAssigneeId()));
             issue.setAssignee(assignee);
         } else {
             issue.setAssignee(null);
@@ -103,7 +120,7 @@ public class IssueServiceImpl implements IssueService {
     @Transactional
     public void deleteIssue(UUID id) {
         if (!issueRepository.existsById(id)) {
-            throw new RuntimeException("Issue not found");
+            throw new ResourceNotFoundException("Issue", "id", id);
         }
         issueRepository.deleteById(id);
     }
@@ -112,9 +129,9 @@ public class IssueServiceImpl implements IssueService {
     @Transactional
     public IssueResponseDTO updateStatus(UUID id, IssueStatusUpdateDTO statusUpdate) {
         Issue issue = issueRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue", "id", id));
 
-        validateTransition(issue.getStatus(), statusUpdate.getStatus());
+        workflowEngine.validateTransition(issue.getStatus(), statusUpdate.getStatus());
         issue.setStatus(statusUpdate.getStatus());
 
         return mapToResponseDTO(issueRepository.save(issue));
@@ -124,35 +141,14 @@ public class IssueServiceImpl implements IssueService {
     @Transactional
     public IssueResponseDTO assignIssue(UUID id, UUID assigneeId) {
         Issue issue = issueRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue", "id", id));
 
         User assignee = userRepository.findById(assigneeId)
-                .orElseThrow(() -> new RuntimeException("Assignee not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", assigneeId));
         
         issue.setAssignee(assignee);
 
         return mapToResponseDTO(issueRepository.save(issue));
-    }
-
-    private void validateTransition(IssueStatus current, IssueStatus next) {
-        if (current == next) return;
-
-        boolean valid = false;
-        switch (current) {
-            case OPEN:
-                valid = (next == IssueStatus.IN_PROGRESS);
-                break;
-            case IN_PROGRESS:
-                valid = (next == IssueStatus.DONE || next == IssueStatus.OPEN);
-                break;
-            case DONE:
-                valid = (next == IssueStatus.IN_PROGRESS); // Reopen
-                break;
-        }
-
-        if (!valid) {
-            throw new RuntimeException("Invalid status transition from " + current + " to " + next);
-        }
     }
 
     private IssueResponseDTO mapToResponseDTO(Issue issue) {
@@ -164,6 +160,7 @@ public class IssueServiceImpl implements IssueService {
                 .status(issue.getStatus())
                 .priority(issue.getPriority())
                 .issueType(issue.getIssueType())
+                .availableTransitions(workflowEngine.getAvailableTransitions(issue.getStatus()))
                 .projectId(issue.getProject().getId())
                 .reporterId(issue.getReporter().getId())
                 .assigneeId(issue.getAssignee() != null ? issue.getAssignee().getId() : null)

@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -23,6 +24,7 @@ public class IssueResponseDTO {
     private IssueStatus status;
     private IssuePriority priority;
     private IssueType issueType;
+    private Set<IssueStatus> availableTransitions;
     private UUID projectId;
     private UUID reporterId;
     private UUID assigneeId;

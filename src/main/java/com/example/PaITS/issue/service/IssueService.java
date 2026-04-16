@@ -11,6 +11,8 @@ import java.util.UUID;
 public interface IssueService {
     IssueResponseDTO createIssue(UUID projectId, UUID reporterId, IssueRequestDTO request);
     List<IssueResponseDTO> getIssuesByProject(UUID projectId);
+    List<IssueResponseDTO> getIssuesByProjectAndStatus(UUID projectId, IssueStatus status);
+    List<IssueResponseDTO> getIssuesByProjectAndAssignee(UUID projectId, UUID assigneeId);
     IssueResponseDTO getIssueById(UUID id);
     IssueResponseDTO updateIssue(UUID id, IssueRequestDTO request);
     void deleteIssue(UUID id);

@@ -15,4 +15,5 @@ public interface IssueRepository extends JpaRepository<Issue, UUID> {
     List<Issue> findByAssigneeId(UUID assigneeId);
     List<Issue> findByProjectIdAndStatus(UUID projectId, IssueStatus status);
     List<Issue> findByProjectIdAndAssigneeId(UUID projectId, UUID assigneeId);
+    void deleteByProjectId(UUID projectId);
 }

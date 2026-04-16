@@ -20,6 +20,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Autowired
     private ProjectRepository projectRepository;
 
+    @Autowired
+    private com.example.PaITS.issue.repository.IssueRepository issueRepository;
+
 
     // ---- Helper: check if user is Admin ----
     private boolean isAdmin(User user) {
@@ -72,7 +75,7 @@ public class ProjectServiceImpl implements ProjectService {
         // Combine projects where user is Leader OR an assigned Member
         Set<Project> projects = new LinkedHashSet<>();
         projects.addAll(projectRepository.findByCreatedBy(userId));
-        projects.addAll(projectRepository.findByMembersId(userId));
+        projects.addAll(projectRepository.findByMemberId(userId));
 
         return projects.stream()
                 .map(this::mapToDTO)
@@ -129,6 +132,7 @@ public class ProjectServiceImpl implements ProjectService {
             throw new RuntimeException("Unauthorized: Only Admins and the Project Leader can delete this project.");
         }
 
+        issueRepository.deleteByProjectId(id);
         projectRepository.deleteById(id);
     }
 
