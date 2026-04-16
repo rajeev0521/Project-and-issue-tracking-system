@@ -25,7 +25,7 @@ The Project & Issue Tracking System is a RESTful backend application designed to
 
 | Component | Technology |
 |-----------|------------|
-| Language | Java 17 |
+| Language | Java 21 |
 | Framework | Spring Boot 3.x |
 | Security | Spring Security + JWT |
 | Database | PostgreSQL |
@@ -39,7 +39,7 @@ The Project & Issue Tracking System is a RESTful backend application designed to
 
 ### Prerequisites
 
-- Java 17 or higher
+- Java 21 or higher
 - PostgreSQL 14 or higher
 - Maven 3.6+
 
