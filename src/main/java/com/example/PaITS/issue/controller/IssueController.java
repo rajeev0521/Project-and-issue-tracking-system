@@ -30,7 +30,7 @@ public class IssueController {
     @PostMapping
     public ResponseEntity<IssueResponseDTO> createIssue(
             @PathVariable UUID projectId,
-            @RequestBody IssueRequestDTO request,
+           @valid @RequestBody IssueRequestDTO request,
             Authentication authentication) {
         
         UUID reporterId = getCurrentUserId(authentication);
@@ -61,7 +61,7 @@ public class IssueController {
     @PutMapping("/{id}")
     public ResponseEntity<IssueResponseDTO> updateIssue(
             @PathVariable UUID id,
-            @RequestBody IssueRequestDTO request) {
+            @valid @RequestBody IssueRequestDTO request) {
         return ResponseEntity.ok(issueService.updateIssue(id, request));
     }
 
